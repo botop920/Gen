@@ -48,7 +48,7 @@ def send_request(auth_token):
 while True:
     for token in auth_tokens:
         send_request(token)
-        time.sleep(0)  # Small delay between accounts to avoid rate limits
+        time.sleep(0.0001)  # Small delay between accounts to avoid rate limits
     
     print("Waiting 5 minutes before the next cycle...")
-    time.sleep(0)  # Wait for 5 minutes before restarting
+    time.sleep(0.0001)  # Wait for 5 minutes before restarting
