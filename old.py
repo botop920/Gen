@@ -40,7 +40,7 @@ with open('data.txt', 'r') as file:
     tokens = [line.strip() for line in file.readlines()]
 
 # Fixed values
-available_taps = 1000
+available_taps = 100000
 count = 30000
 
 # Loop to send requests for each token, and repeat the process after completing all accounts
