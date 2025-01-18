@@ -1,54 +1,52 @@
 import requests
-import time
 import uuid
+from threading import Thread
 
 # Function to send the request
 def send_request(available_taps, count, token):
     url = 'https://api-gw.geagle.online/tap'
     headers = {
         'accept': 'application/json, text/plain, */*',
-        'accept-language': 'en-US,en;q=0.9',
         'authorization': f'Bearer {token}',
         'content-type': 'application/json',
         'origin': 'https://telegram.geagle.online',
-        'priority': 'u=1, i',
         'referer': 'https://telegram.geagle.online/',
-        'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-site',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     }
-    
+
     timestamp = int(time.time())
     salt = str(uuid.uuid4())
-    
+
     data = {
         "available_taps": available_taps,
-        "count": count,
+        "count": count,  # Attempting a large number of taps
         "timestamp": timestamp,
         "salt": salt
     }
-    
-    response = requests.post(url, headers=headers, json=data)
-    return response.json()
 
-# Read the Bearer tokens from data.txt
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        print(f"Response for token {token}: {response.json()}")
+    except Exception as e:
+        print(f"Error for token {token}: {e}")
+
+# Function to continuously send requests for one token
+def handle_token(token):
+    while True:
+        send_request(available_taps=100000, count=100000, token=token)  # Attempt 100,000 taps
+        # No delay to continuously send requests
+
+# Read tokens from data.txt
 with open('data.txt', 'r') as file:
     tokens = [line.strip() for line in file.readlines()]
 
-# Fixed values
-available_taps = 100000
-count = 30000
+# Create a thread for each token
+threads = []
+for token in tokens:
+    thread = Thread(target=handle_token, args=(token,))
+    threads.append(thread)
+    thread.start()
 
-# Loop to send requests for each token, and repeat the process after completing all accounts
-while True:
-    for token in tokens:
-        response = send_request(available_taps, count, token)
-        print(f"Response for token {token}: {response}")
-    
-    # Wait for 5 minutes before repeating the process for all accounts
-    print("Waiting for 5 minutes before repeating...")
-    time.sleep(5 * 60)  # Wait for 5 minutes before starting the next iteration
+# Wait for all threads (script will run indefinitely)
+for thread in threads:
+    thread.join()
