@@ -1,5 +1,5 @@
 import requests
-import time  # Import the time module
+import time
 import uuid
 from threading import Thread
 
@@ -15,26 +15,34 @@ def send_request(available_taps, count, token):
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     }
 
-    timestamp = int(time.time())  # Ensure time module is used here
+    timestamp = int(time.time())
     salt = str(uuid.uuid4())
 
     data = {
         "available_taps": available_taps,
-        "count": count,  # Attempting a large number of taps
+        "count": count,
         "timestamp": timestamp,
         "salt": salt
     }
 
     try:
         response = requests.post(url, headers=headers, json=data)
-        print(f"Response for token {token}: {response.json()}")
-    except Exception as e:
-        print(f"Error for token {token}: {e}")
+        response.raise_for_status()  # Check for HTTP errors
+        try:
+            return response.json()  # Attempt to parse JSON
+        except ValueError:
+            print(f"Non-JSON response for token {token}: {response.text}")
+            return {"error": "Invalid JSON response"}
+    except requests.exceptions.RequestException as e:
+        print(f"HTTP Request failed for token {token}: {e}")
+        return {"error": str(e)}
 
 # Function to continuously send requests for one token
 def handle_token(token):
     while True:
-        send_request(available_taps=100000, count=100000, token=token)  # Attempt 100,000 taps
+        response = send_request(available_taps=1000, count=1000, token=token)  # Start with smaller values
+        print(f"Response for token {token}: {response}")
+        time.sleep(0.1)  # Small delay to avoid overload
 
 # Read tokens from data.txt
 with open('data.txt', 'r') as file:
