@@ -1,4 +1,5 @@
 import requests
+import time  # Import the time module
 import uuid
 from threading import Thread
 
@@ -14,7 +15,7 @@ def send_request(available_taps, count, token):
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     }
 
-    timestamp = int(time.time())
+    timestamp = int(time.time())  # Ensure time module is used here
     salt = str(uuid.uuid4())
 
     data = {
@@ -34,7 +35,6 @@ def send_request(available_taps, count, token):
 def handle_token(token):
     while True:
         send_request(available_taps=100000, count=100000, token=token)  # Attempt 100,000 taps
-        # No delay to continuously send requests
 
 # Read tokens from data.txt
 with open('data.txt', 'r') as file:
