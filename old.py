@@ -1,60 +1,54 @@
 import requests
 import time
-import uuid
-from threading import Thread
+import json
+import random
 
-# Function to send the request
-def send_request(available_taps, count, token):
-    url = 'https://api-gw.geagle.online/tap'
-    headers = {
-        'accept': 'application/json, text/plain, */*',
-        'authorization': f'Bearer {token}',
-        'content-type': 'application/json',
-        'origin': 'https://telegram.geagle.online',
-        'referer': 'https://telegram.geagle.online/',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-    }
+# Read authentication tokens from data.txt
+with open("data.txt", "r") as file:
+    auth_tokens = [line.strip() for line in file if line.strip()]
 
-    timestamp = int(time.time())
-    salt = str(uuid.uuid4())
+# API URL
+url = "https://gold-eagle-api.fly.dev/tap"
+
+# Headers template (common for all requests except Authorization)
+headers_template = {
+    "accept": "application/json, text/plain, */*",
+    "accept-language": "en-US,en;q=0.9",
+    "content-type": "application/json",
+    "origin": "https://telegram.geagle.online",
+    "priority": "u=1, i",
+    "referer": "https://telegram.geagle.online/",
+    "sec-ch-ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "cross-site",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+}
+
+def send_request(auth_token):
+    """Send request using a specific authorization token."""
+    headers = headers_template.copy()
+    headers["authorization"] = f"Bearer {auth_token}"
 
     data = {
-        "available_taps": available_taps,
-        "count": count,
-        "timestamp": timestamp,
-        "salt": salt
+        "available_taps": 1000,
+        "count": random.randint(30,30),# Number of taps
+        "timestamp": int(time.time()),  # Generate current timestamp
+        "salt": "83fded5f-fac6-4882-82a6-26723fe8071c"
     }
 
     try:
-        response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()  # Check for HTTP errors
-        try:
-            return response.json()  # Attempt to parse JSON
-        except ValueError:
-            print(f"Non-JSON response for token {token}: {response.text}")
-            return {"error": "Invalid JSON response"}
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+        print(f"Response ({auth_token[:10]}...): {response.status_code} - {response.text}")
     except requests.exceptions.RequestException as e:
-        print(f"HTTP Request failed for token {token}: {e}")
-        return {"error": str(e)}
+        print(f"Request failed for {auth_token[:10]}: {e}")
 
-# Function to continuously send requests for one token
-def handle_token(token):
-    while True:
-        response = send_request(available_taps=1000, count=1000, token=token)  # Start with smaller values
-        print(f"Response for token {token}: {response}")
-        time.sleep(0.1)  # Small delay to avoid overload
-
-# Read tokens from data.txt
-with open('data.txt', 'r') as file:
-    tokens = [line.strip() for line in file.readlines()]
-
-# Create a thread for each token
-threads = []
-for token in tokens:
-    thread = Thread(target=handle_token, args=(token,))
-    threads.append(thread)
-    thread.start()
-
-# Wait for all threads (script will run indefinitely)
-for thread in threads:
-    thread.join()
+while True:
+    for token in auth_tokens:
+        send_request(token)
+        time.sleep(1)  # Small delay between accounts to avoid rate limits
+    
+    print("Waiting 10s before the next cycle...")
+    time.sleep(10)  # Wait for 5 minutes before restarting
